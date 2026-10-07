@@ -64,6 +64,27 @@ class ModeloVistaCalculadora : ViewModel() {
                 return
             }
 
+            val operadores = listOf("+", "-", "X", "/")
+            val ultimoCaracter = currentEquation.lastOrNull()
+            val ultimoEsOperador = ultimoCaracter?.toString() in operadores
+
+            if (btn in operadores) {
+                if (currentEquation.isEmpty()) {
+                    return
+                }
+                if (ultimoEsOperador) {
+                    _ecuacionText.value = currentEquation.dropLast(1) + btn
+                    return
+                }
+                if (ultimoCaracter == ',') {
+                    return
+                }
+            }
+
+            if ((btn == "%" || btn == ",") && (ultimoCaracter == null || ultimoEsOperador || ultimoCaracter == ',')) {
+                return
+            }
+
             val evalBtn = if (btn == "%") "/100" else btn
             val nuevaEcuacion = currentEquation + evalBtn
             _ecuacionText.value = nuevaEcuacion
