@@ -1,103 +1,153 @@
 package com.craos6518.calulcadoraprograacionmovil
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.focusModifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.craos6518.calulcadoraprograacionmovil.ui.theme.CalculatorControlColor
+import com.craos6518.calulcadoraprograacionmovil.ui.theme.CalculatorNumberColor
+import com.craos6518.calulcadoraprograacionmovil.ui.theme.CalculatorOperatorColor
 
-val botoneslista = listOf(
-    "C", "AC", "%", "/",
-    "7", "8", "9", "X",
-    "4","5", "6", "-",
-    "1", "2","3", "+",
+val botonesLista = listOf(
+    "C", "AC", "%", "÷",
+    "7", "8", "9", "×",
+    "4", "5", "6", "-",
+    "1", "2", "3", "+",
     "+/-", "0", ",", "="
 )
-@Composable
-fun Calculadora(modifier: Modifier = Modifier, viewModel: ModeloVistaCalculadora) {
 
+@Composable
+fun Calculadora(
+    modifier: Modifier = Modifier,
+    viewModel: ModeloVistaCalculadora,
+    onOpenHistory: () -> Unit = {}
+) {
     val ecuacionText by viewModel.ecuacionText.observeAsState("")
     val resultadosText by viewModel.resultadosText.observeAsState("0")
+    val hayError by viewModel.isError.observeAsState(false)
 
-    Box(modifier = modifier) {
-        Column (
-            modifier= modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.End
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.End
+    ) {
+        // Top Bar con botón de Historial
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = ecuacionText,  // vista de ecuacion (OPERACIÓN)
-                style = TextStyle(
-                    fontSize = 30.sp,
-                    textAlign = TextAlign.End,
-                ),
-                maxLines = 5,
-                overflow = TextOverflow.Ellipsis
-            )
+            TextButton(onClick = onOpenHistory) {
+                Text(text = stringResource(R.string.calculator_history))
+            }
+        }
 
-            Spacer(modifier = Modifier.weight(1f))
+        Spacer(modifier = Modifier.weight(1f))
 
-            Text(
-                text = resultadosText, // Vista del resultado
-                style = TextStyle(
-                    fontSize = 60.sp,
-                    textAlign = TextAlign.End,
-                ),
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-            Spacer(modifier = Modifier.height(10.dp))
-            LazyVerticalGrid(columns = GridCells.Fixed(4)
-            ) {
-                items(botoneslista){
-                    CalculadoraBoton(btn = it, clickBoton = {
-                        viewModel.ClickBoton(it)
-                    })
-                }
+        // 1. Vista de la ECUACIÓN / OPERACIÓN
+        Text(
+            text = ecuacionText,
+            style = TextStyle(
+                fontSize = 32.sp,
+                textAlign = TextAlign.End,
+            ),
+            maxLines = 3,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // 2. Vista del RESULTADO o ERROR
+        Text(
+            text = if (hayError) {
+                stringResource(R.string.error_matematico)
+            } else {
+                resultadosText
+            },
+            style = TextStyle(
+                fontSize = 56.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.End,
+            ),
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // 3. Grid de Botones
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(4),
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(botonesLista) { btn ->
+                CalculadoraBoton(
+                    btn = btn,
+                    clickBoton = { viewModel.clickBoton(btn) }
+                )
             }
         }
     }
 }
 
 @Composable
-fun CalculadoraBoton(btn : String, clickBoton : ()-> Unit) {
-    Box(modifier = Modifier.padding(10.dp)){
+fun CalculadoraBoton(btn: String, clickBoton: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .aspectRatio(1f)
+            .padding(2.dp)
+    ) {
         FloatingActionButton(
             onClick = clickBoton,
-            modifier = Modifier.size(80.dp),
+            modifier = Modifier.fillMaxSize(),
             shape = CircleShape,
             containerColor = obtenerColor(btn),
-            contentColor =  Color.White
+            contentColor = Color.White
         ) {
-            Text(text = btn, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            Text(
+                text = btn,
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold
+            )
         }
     }
 }
-fun obtenerColor(btn : String): Color {
-    if (btn == "C" || btn == "AC" || btn == "%")
-        return Color(0xFF5D5D5D)
-    if (btn == "/" || btn == "X" || btn == "-" || btn == "+" || btn == "=")
-        return Color(0xFFFF9100)
-    return Color(0xFF343434)
 
+fun obtenerColor(btn: String): Color {
+    return when (btn) {
+        "C", "AC", "%" -> CalculatorControlColor
+        "÷", "×", "-", "+", "=" -> CalculatorOperatorColor
+        else -> CalculatorNumberColor
+    }
 }

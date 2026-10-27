@@ -1,121 +1,166 @@
 package com.craos6518.calulcadoraprograacionmovil
 
-import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import org.mozilla.javascript.Context
-import org.mozilla.javascript.Scriptable
 
 class ModeloVistaCalculadora : ViewModel() {
 
-    private val _ecuacionText = MutableLiveData<String>("")
-    val ecuacionText : LiveData<String> = _ecuacionText
+    private val _ecuacionText = MutableLiveData("")
+    val ecuacionText: LiveData<String> = _ecuacionText
 
-    private val _resultadoText = MutableLiveData<String>("0")
-    val resultadosText : LiveData<String> = _resultadoText
+    private val _resultadoText = MutableLiveData("0")
+    val resultadosText: LiveData<String> = _resultadoText
 
-    fun ClickBoton(btn : String){
-        Log.i("ModeloVistaCalculadora", "Click Boton: $btn")
+    private val _isError = MutableLiveData(false)
+    val isError: LiveData<Boolean> = _isError
 
-        _ecuacionText.value?.let { currentEquation ->
-            if (btn == "AC"){
-                _ecuacionText.value = ""
-                _resultadoText.value = "0"
+    private val _historial = MutableLiveData<List<String>>(emptyList())
+    val historial: LiveData<List<String>> = _historial
+
+    private val evaluador = EvaluadorCalculadora()
+    private var resultadoConfirmado = false
+
+    fun limpiarHistorial() {
+        _historial.value = emptyList()
+    }
+
+    fun clickBoton(boton: String) {
+        if (_isError.value == true) {
+            _ecuacionText.value = ""
+            _resultadoText.value = "0"
+            _isError.value = false
+            resultadoConfirmado = false
+        }
+        var expresion = _ecuacionText.value.orEmpty()
+
+        when (boton) {
+            "AC" -> {
+                limpiarCalculadora()
                 return
             }
-            if (btn == "C"){
-                if (currentEquation.isNotEmpty()){
-                    val nuevaEcuacion = currentEquation.substring(0, currentEquation.length - 1)
-                    _ecuacionText.value = nuevaEcuacion
-                    if (nuevaEcuacion.isNotEmpty()) {
-                        try {
-                            val res = CalcularResultado(nuevaEcuacion)
-                            if (res.isNotEmpty() && res != "org.mozilla.javascript.Undefined@0") {
-                                _resultadoText.value = res
-                            }
-                        } catch (_: Exception) {
-                            // Ignore
+            "C" -> {
+                if (expresion.isNotEmpty()) {
+                    expresion = expresion.dropLast(1)
+                    _ecuacionText.value = expresion
+                    resultadoConfirmado = false
+                    actualizarResultadoParcial(expresion)
+                }
+                return
+            }
+            "=" -> {
+                if (resultadoConfirmado || expresion.isBlank()) return
+
+                when (val resultado = evaluador.evaluar(expresion)) {
+                    is ResultadoEvaluacion.Exito -> {
+                        val registro = "$expresion = ${resultado.valor}"
+                        val historialActual = _historial.value.orEmpty()
+
+                        if (historialActual.firstOrNull() != registro) {
+                            _historial.value = listOf(registro) + historialActual
                         }
-                    } else {
-                        _resultadoText.value = "0"
+
+                        _resultadoText.value = resultado.valor
+                        _ecuacionText.value = resultado.valor
+                        _isError.value = false
+                        resultadoConfirmado = true
                     }
-                    return
-                }
-                return
-            }
-            if (btn == "="){
-                if (currentEquation.isNotEmpty()) {
-                    val res = CalcularResultado(currentEquation)
-                    if (res.isNotEmpty() && res != "org.mozilla.javascript.Undefined@0") {
-                        _resultadoText.value = res
-                        _ecuacionText.value = res
+
+                    ResultadoEvaluacion.Error -> {
+                        _isError.value = true
                     }
                 }
                 return
             }
-
-            if (btn == "+/-") {
-                if (currentEquation.startsWith("-")) {
-                    _ecuacionText.value = currentEquation.substring(1)
-                } else if (currentEquation.isNotEmpty()) {
-                    _ecuacionText.value = "-$currentEquation"
-                }
+            "+/-" -> {
+                expresion = cambiarSignoDelUltimo(expresion)
+                _ecuacionText.value = expresion
+                resultadoConfirmado = false
+                actualizarResultadoParcial(expresion)
                 return
             }
-
-            val operadores = listOf("+", "-", "X", "/")
-            val ultimoCaracter = currentEquation.lastOrNull()
-            val ultimoEsOperador = ultimoCaracter?.toString() in operadores
-
-            if (btn in operadores) {
-                if (currentEquation.isEmpty()) {
+            "," -> {
+                expresion = agregarDecimal(expresion)
+            }
+            "%" -> {
+                if (expresion.endsWith("%")) return
+                expresion += "%"
+            }
+            "+", "-", "×", "÷" -> {
+                if (expresion.isEmpty()) {
+                    if (boton != "-") return
+                } else if (expresion.last() in "+-×÷") {
+                    expresion = expresion.dropLast(1)
+                } else if (expresion.last() == ',') {
                     return
                 }
-                if (ultimoEsOperador) {
-                    _ecuacionText.value = currentEquation.dropLast(1) + btn
-                    return
-                }
-                if (ultimoCaracter == ',') {
-                    return
-                }
+                expresion += boton
             }
-
-            if ((btn == "%" || btn == ",") && (ultimoCaracter == null || ultimoEsOperador || ultimoCaracter == ',')) {
-                return
-            }
-
-            val evalBtn = if (btn == "%") "/100" else btn
-            val nuevaEcuacion = currentEquation + evalBtn
-            _ecuacionText.value = nuevaEcuacion
-
-            try {
-                val res = CalcularResultado(nuevaEcuacion)
-                if (res.isNotEmpty() && res != "org.mozilla.javascript.Undefined@0") {
-                    _resultadoText.value = res
+            in "0".."9" -> {
+                if (resultadoConfirmado) {
+                    expresion = ""
+                    _resultadoText.value = "0"
+                    resultadoConfirmado = false
                 }
-            } catch (_: Exception) {
-                // Ignore partial evaluation errors
+                expresion += boton
             }
+            else -> return
+        }
+        _ecuacionText.value = expresion
+        actualizarResultadoParcial(expresion)
+    }
+
+    private fun limpiarCalculadora() {
+        _ecuacionText.value = ""
+        _resultadoText.value = "0"
+        _isError.value = false
+        resultadoConfirmado = false
+    }
+
+    private fun agregarDecimal(expresion: String): String {
+        val indiceOperador = expresion.indexOfLast { it in "+-×÷" }
+        val ultimoNumero = expresion.substring(indiceOperador + 1)
+
+        if (ultimoNumero.contains(",") || ultimoNumero.contains(".")) {
+            return expresion
+        }
+
+        return if (expresion.isEmpty() || expresion.last() in "+-×÷") {
+            "${expresion}0,"
+        } else {
+            "$expresion,"
         }
     }
 
-    fun CalcularResultado(ecuacion : String) : String{
-        val contexto : Context = Context.enter()
-        try {
-            contexto.optimizationLevel = -1
-            val scriptable : Scriptable = contexto.initStandardObjects()
-            val ecuacionJS = ecuacion.replace("X", "*").replace(",", ".")
-            val resultadoObj = contexto.evaluateString(scriptable, ecuacionJS, "Javascript", 1, null)
-            var resultadoFinal = resultadoObj?.toString() ?: ""
-            if (resultadoFinal.endsWith(".0")){
-                resultadoFinal = resultadoFinal.removeSuffix(".0")
+    private fun cambiarSignoDelUltimo(expresion: String): String {
+        if (expresion.isEmpty() || expresion.last() in "+-×÷") {
+            return "$expresion-"
+        }
+        val ultimoNumero = Regex("""-?\d+(?:[,.]\d*)?$""").find(expresion)
+            ?: return expresion
+
+        val numero = ultimoNumero.value
+        val reemplazo = if (numero.startsWith("-")) {
+            numero.drop(1)
+        } else {
+            "(-$numero)"
+        }
+        return expresion.replaceRange(ultimoNumero.range, reemplazo)
+    }
+
+    private fun actualizarResultadoParcial(expresion: String) {
+        if (expresion.isBlank() || expresion.last() in "+-×÷" || expresion == "-") {
+            _isError.value = false
+            return
+        }
+        when (val resultado = evaluador.evaluar(expresion)) {
+            is ResultadoEvaluacion.Exito -> {
+                _resultadoText.value = resultado.valor
+                _isError.value = false
             }
-            return resultadoFinal
-        } catch (_: Exception) {
-            return ""
-        } finally {
-            Context.exit()
+            ResultadoEvaluacion.Error -> {
+                _isError.value = true
+            }
         }
     }
 }

@@ -1,3 +1,9 @@
 <resources>
     <string name="app_name">Calulcadora Progra,acion Movil</string>
+    <string name="history_title">Historial</string>
+    <string name="history_clear">Borrar</string>
+    <string name="history_empty">Todavía no hay operaciones</string>
+    <string name="history_return">Volver a calcular</string>
+    <string name="calculator_history">Historial</string>
+    <string name="error_matematico">ERROR Matemático</string>
 </resources>

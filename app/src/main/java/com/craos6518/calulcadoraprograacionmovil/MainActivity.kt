@@ -8,6 +8,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import androidx.lifecycle.ViewModelProvider
 import com.craos6518.calulcadoraprograacionmovil.ui.theme.CalulcadoraPrograacionMovilTheme
 
@@ -18,8 +21,23 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             CalulcadoraPrograacionMovilTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Calculadora(modifier = Modifier.padding(innerPadding), modeloVistaCalculadora )
+                val navController = rememberNavController()
+                NavHost(navController = navController, startDestination = "calculator") {
+                    composable("calculator") {
+                        Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+                            Calculadora(
+                                modifier = Modifier.padding(innerPadding),
+                                viewModel = modeloVistaCalculadora,
+                                onOpenHistory = { navController.navigate("history") }
+                            )
+                        }
+                    }
+                    composable("history") {
+                        Historial(
+                            viewModel = modeloVistaCalculadora,
+                            onBack = { navController.popBackStack() }
+                        )
+                    }
                 }
             }
         }
