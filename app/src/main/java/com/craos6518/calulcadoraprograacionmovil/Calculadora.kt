@@ -20,6 +20,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -28,11 +29,13 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.craos6518.calulcadoraprograacionmovil.ui.theme.CalculatorControlColor
 import com.craos6518.calulcadoraprograacionmovil.ui.theme.CalculatorNumberColor
 import com.craos6518.calulcadoraprograacionmovil.ui.theme.CalculatorOperatorColor
+import com.craos6518.calulcadoraprograacionmovil.ui.theme.CalulcadoraPrograacionMovilTheme
 
 val botonesLista = listOf(
     "C", "AC", "%", "÷",
@@ -151,3 +154,30 @@ fun obtenerColor(btn: String): Color {
         else -> CalculatorNumberColor
     }
 }
+
+@Preview(showBackground = true, name = "Calculadora Vista Previa")
+@Composable
+fun CalculadoraPreview() {
+    val viewModel = remember { ModeloVistaCalculadora() }
+    CalulcadoraPrograacionMovilTheme {
+        Calculadora(
+            viewModel = viewModel
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Botones Vista Previa")
+@Composable
+fun CalculadoraBotonPreview() {
+    CalulcadoraPrograacionMovilTheme {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            CalculadoraBoton(btn = "7", clickBoton = {})
+            CalculadoraBoton(btn = "+", clickBoton = {})
+            CalculadoraBoton(btn = "AC", clickBoton = {})
+        }
+    }
+}
+
