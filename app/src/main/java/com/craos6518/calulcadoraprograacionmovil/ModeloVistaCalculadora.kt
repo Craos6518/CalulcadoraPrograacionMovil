@@ -83,7 +83,7 @@ class ModeloVistaCalculadora : ViewModel() {
                 expresion = agregarDecimal(expresion)
             }
             "%" -> {
-                if (expresion.endsWith("%")) return
+                if (expresion.isEmpty() || expresion.last() in "+-×÷" || expresion.endsWith("("))return
                 expresion += "%"
             }
             "+", "-", "×", "÷" -> {

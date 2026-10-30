@@ -79,4 +79,24 @@ class EvaluadorCalculadoraTest {
         assertTrue(resultado is ResultadoEvaluacion.Exito)
         assertEquals("20.0", (resultado as ResultadoEvaluacion.Exito).valor)
     }
+    @Test
+    fun test11_evaluarPorcentajeSimple_retornaExito() {
+        val resultado = evaluador.evaluar("50%")
+        assertTrue(resultado is ResultadoEvaluacion.Exito)
+        assertEquals("0.5", (resultado as ResultadoEvaluacion.Exito).valor)
+    }
+
+    @Test
+    fun test12_evaluarMultiplicacionConPorcentaje_retornaExito() {
+        val resultado = evaluador.evaluar("50×10%")
+        assertTrue(resultado is ResultadoEvaluacion.Exito)
+        assertEquals("5.0", (resultado as ResultadoEvaluacion.Exito).valor)
+    }
+
+    @Test
+    fun test13_evaluarSumaConPorcentaje_retornaExito() {
+        val resultado = evaluador.evaluar("100+10%")
+        assertTrue(resultado is ResultadoEvaluacion.Exito)
+        assertEquals("110.0", (resultado as ResultadoEvaluacion.Exito).valor)
+    }
 }
